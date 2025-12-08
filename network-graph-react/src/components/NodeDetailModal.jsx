@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import definitions from '../data/definitions';
 
 // Inline SVG Icons (ECL style)
 const CloseIcon = () => (
@@ -98,6 +99,16 @@ const NodeDetailModal = ({ open, node, onClose }) => {
                                     </>
                                 )}
                             </dl>
+
+                            {/* Definition Section */}
+                            {definitions[node.id] && (
+                                <div className="ecl-u-mt-l">
+                                    <h3 className="ecl-u-type-heading-3 ecl-u-mb-m">Definition</h3>
+                                    <p className="ecl-u-type-paragraph-m" style={{ whiteSpace: 'pre-line' }}>
+                                        {definitions[node.id]}
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Info Message */}
                             <div className="ecl-u-mt-l">
