@@ -22,10 +22,12 @@ initModule(accessibility);
 // EU Official Colors for chart
 const EU_COLORS = {
     blue: '#004494',       // EU Blue - Primary (TOTAL)
-    yellow: '#FFC617',     // EU Yellow
-    darkBlue: '#0e47cb',   // Dark Blue (Sub-products)
+    yellow: '#FFC617',     // EU Yellow - Level 1 (Main categories)
+    darkBlue: '#0e47cb',   // Dark Blue - Level 2
+    teal: '#00a0b0',       // Teal - Level 3
+    lightBlue: '#5bc0de',  // Light Blue - Level 4+
     grey: '#404040',
-    white: '#FFFFFF'       // White (Main categories fill)
+    white: '#FFFFFF'       // White (TOTAL fill)
 };
 
 // Memoized chart component that never re-renders when modal state changes
@@ -35,7 +37,11 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
     const options = useMemo(() => ({
         chart: {
             type: 'networkgraph',
-            height: '100%',
+            height: 1000,
+            scrollablePlotArea: {
+                minHeight: 800,
+                scrollPositionY: 0
+            },
             backgroundColor: 'rgba(255, 255, 255, 0.9)',
             margin: [50, 50, 50, 50],
             spacing: [10, 10, 10, 10],
@@ -88,7 +94,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                         const plotWidth = chart.plotWidth || 800;
                         const plotHeight = chart.plotHeight || 600;
                         const centerX = plotWidth / 2;
-                        const centerY = plotHeight / 4;
+                        const centerY = plotHeight / 2;
 
                         const nodes = this.nodes || (this.series && this.series[0] && this.series[0].nodes);
                         if (!nodes || !nodes.length) return;
@@ -104,14 +110,17 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                             };
                         }
 
-                        // Position main categories in a circle around TOTAL
-                        const mainCategories = ['FE', 'RA000', 'N900H', 'E7000', 'H8000', 'W6100_6220'];
+                        // Position main categories (level 1) in a circle around TOTAL
+                        const mainCategories = [
+                            'C0000X0350-0370', 'C0350-0370', 'P1000', 'S2000', 'G3000', 
+                            'O4000XBIO', 'RA000', 'W6100_6220', 'N900H', 'E7000', 'H8000'
+                        ];
                         const mainNodes = nodes.filter(n => mainCategories.includes(n.id));
                         const angleStep = (2 * Math.PI) / mainNodes.length;
-                        const radius = Math.min(plotWidth, plotHeight) * 0.1;
+                        const radius = Math.min(plotWidth, plotHeight) * 0.12;
 
                         mainNodes.forEach((node, i) => {
-                            const angle = i * angleStep;
+                            const angle = i * angleStep - Math.PI / 2; // Start from top
                             node.plotX = centerX + radius * Math.cos(angle);
                             node.plotY = centerY + radius * Math.sin(angle);
                         });
@@ -145,18 +154,20 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                 id: 'eurostat',
                 data: seriesData.data,
                 nodes: seriesData.nodes.map(node => {
-                    // Main categories (products)
-                    const mainCategories = ['FE', 'RA000', 'N900H', 'E7000', 'H8000', 'W6100_6220'];
-                    const isMainCategory = mainCategories.includes(node.id);
+                    // Use the isMainCategory flag from the hook
+                    const isMainCategory = node.isMainCategory;
                     const isTotal = node.id === 'TOTAL';
+                    const depth = node.depth || 0;
                     
-                    // Determine color based on level:
-                    // 1. TOTAL = White with Blue border
-                    // 2. Main categories = EU Yellow
-                    // 3. Sub-products = EU Dark Blue
-                    let nodeColor = EU_COLORS.darkBlue; // Default: sub-products
-                    let borderColor = 'rgba(0, 55, 118, 0.3)';
-                    let borderWidth = 2;
+                    // Determine color based on hierarchy depth:
+                    // Level 0: TOTAL = White with Blue border
+                    // Level 1: Main categories = EU Yellow
+                    // Level 2: Sub-categories = EU Dark Blue
+                    // Level 3: Products = EU Teal
+                    // Level 4+: Sub-products = EU Light Blue
+                    let nodeColor = EU_COLORS.lightBlue; // Default: deepest levels
+                    let borderColor = 'rgba(91, 192, 222, 0.5)';
+                    let borderWidth = 1;
                     
                     if (isTotal) {
                         // TOTAL: White fill with blue border
@@ -164,10 +175,25 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                         borderColor = EU_COLORS.blue;
                         borderWidth = 4;
                     } else if (isMainCategory) {
-                        // Main categories: Yellow
+                        // Main categories (level 1): Yellow
                         nodeColor = EU_COLORS.yellow;
                         borderColor = EU_COLORS.grey;
                         borderWidth = 2;
+                    } else if (depth === 2) {
+                        // Level 2: Dark Blue
+                        nodeColor = EU_COLORS.darkBlue;
+                        borderColor = 'rgba(14, 71, 203, 0.5)';
+                        borderWidth = 1;
+                    } else if (depth === 3) {
+                        // Level 3: Teal
+                        nodeColor = EU_COLORS.teal;
+                        borderColor = 'rgba(0, 160, 176, 0.5)';
+                        borderWidth = 1;
+                    } else if (depth >= 4) {
+                        // Level 4+: Light Blue
+                        nodeColor = EU_COLORS.lightBlue;
+                        borderColor = 'rgba(91, 192, 222, 0.5)';
+                        borderWidth = 1;
                     }
                     
                     const baseNode = {
@@ -179,12 +205,34 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                             lineColor: borderColor,
                             fillColor: nodeColor
                         },
+                        // Add data labels for all nodes except TOTAL
+                        dataLabels: !isTotal ? {
+                            enabled: true,
+                            format: `{point.name}${node.value ? `<br/>${node.value.toFixed(0)} KTOE` : ''}`,
+                            verticalAlign: 'bottom',
+                            y: -5,
+                            style: {
+                                fontSize: depth <= 2 ? '10px' : '8px',
+                                fontWeight: depth === 1 ? '600' : '400',
+                                color: EU_COLORS.grey,
+                                textOutline: '2px white'
+                            }
+                        } : {
+                            enabled: true,
+                            format: 'Total Energy Supply',
+                            style: {
+                                fontSize: '14px',
+                                fontWeight: '700',
+                                color: EU_COLORS.blue
+                            }
+                        },
                         events: {
                             click: function () {
                                 const nodeData = {
                                     id: this.id,
                                     name: this.name,
-                                    value: this.value
+                                    value: this.value,
+                                    depth: this.depth
                                 };
                                 setTimeout(() => onNodeClick(nodeData), 0);
                             }
@@ -219,7 +267,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
             ref={chartRef}
             immutable={true}
             updateArgs={[false, false, false]}
-            containerProps={{ style: { width: '100%', height: '90vh' } }}
+            containerProps={{ style: { width: '100%', minHeight: '1000px' } }}
         />
     );
 });

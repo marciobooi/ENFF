@@ -114,23 +114,39 @@ const useEurostatGraphData = () => {
         console.log('SIEC values from API:', valBySiec.size);
         console.log('Sample SIEC values:', Array.from(valBySiec.entries()).slice(0, 5));
 
-        // Define color scheme for main categories
-        const colorMap = {
-            'TOTAL': '#2c3e50',
-            'FE': '#e74c3c',
-            'RA000': '#27ae60',
-            'N900H': '#9b59b6',
-            'E7000': '#f39c12',
-            'H8000': '#e67e22',
-            'W6100_6220': '#95a5a6'
-        };
+        // Main categories directly under TOTAL (level 1)
+        // These are the first-level aggregates in the SIEC hierarchy
+        const mainCategoryIds = [
+            'C0000X0350-0370', // Solid Fossil Fuels
+            'C0350-0370',      // Manufactured Gases
+            'P1000',           // Peat
+            'S2000',           // Oil Shale
+            'G3000',           // Natural Gas
+            'O4000XBIO',       // Oil & Petroleum Products
+            'RA000',           // Renewables & Biofuels
+            'W6100_6220',      // Non-Renewable Waste
+            'N900H',           // Nuclear Heat
+            'E7000',           // Electricity
+            'H8000'            // Heat
+        ];
 
         // Build parent-child relationships for value aggregation
         const childrenMap = new Map();
+        const parentMap = new Map(); // Track parent of each node
         familyEdges.forEach(([from, to]) => {
             if (!childrenMap.has(from)) childrenMap.set(from, []);
             childrenMap.get(from).push(to);
+            parentMap.set(to, from);
         });
+
+        // Calculate node depth (distance from TOTAL)
+        const nodeDepths = new Map();
+        const calculateDepth = (nodeId, depth = 0) => {
+            nodeDepths.set(nodeId, depth);
+            const children = childrenMap.get(nodeId) || [];
+            children.forEach(child => calculateDepth(child, depth + 1));
+        };
+        calculateDepth('TOTAL', 0);
 
         // Calculate aggregated values (sum of children) for parent nodes
         const nodeValues = new Map();
@@ -165,67 +181,56 @@ const useEurostatGraphData = () => {
 
         console.log('Node values calculated:', nodeValues.size);
         console.log('Sample node values:', Array.from(nodeValues.entries()).slice(0, 10));
+        console.log('Node depths:', Array.from(nodeDepths.entries()).slice(0, 15));
 
         // Find min/max values for scaling (excluding zero values)
         const nonZeroValues = Array.from(nodeValues.values()).filter(v => v > 0);
-        const minValue = Math.min(...nonZeroValues);
-        const maxValue = Math.max(...nonZeroValues);
+        const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
+        const maxValue = nonZeroValues.length > 0 ? Math.max(...nonZeroValues) : 1;
 
         console.log('Value range:', { minValue, maxValue, nonZeroCount: nonZeroValues.length });
 
         const nodes = new Map();
         familyNodes.forEach(n => {
             const value = nodeValues.get(n.id) || 0;
+            const depth = nodeDepths.get(n.id) || 0;
             const isRoot = n.id === 'TOTAL';
-            const isMainCategory = colorMap[n.id] !== undefined && n.id !== 'TOTAL';
+            const isMainCategory = mainCategoryIds.includes(n.id);
             const hasValue = value > 0;
             
-            // Determine node properties
-            let color = '#3498db'; // default blue for leaf nodes
-            let markerRadius = 8;
+            // Calculate normalized value for sizing
+            const normalizedValue = maxValue > minValue 
+                ? (value - minValue) / (maxValue - minValue) 
+                : 0;
             
+            // Determine marker radius based on depth and value
+            let markerRadius;
             if (isRoot) {
-                // TOTAL node - largest, special color
-                color = colorMap['TOTAL'];
-                markerRadius = 40;
+                markerRadius = 40; // TOTAL is largest
             } else if (isMainCategory) {
-                // Main categories - color-coded, size based on aggregated value
-                color = colorMap[n.id];
-                const normalizedValue = (value - minValue) / (maxValue - minValue);
-                markerRadius = 15 + normalizedValue * 25; // 15-40 range
-            } else if (hasValue) {
-                // Leaf/intermediate nodes with data - size based on value
-                const normalizedValue = (value - minValue) / (maxValue - minValue);
-                markerRadius = Math.max(4, 6 + normalizedValue * 18); // 4-24 range
-                // Use parent's color for sub-nodes
-                const parentEdge = familyEdges.find(([from, to]) => to === n.id);
-                if (parentEdge) {
-                    const parentColor = colorMap[parentEdge[0]];
-                    if (parentColor) {
-                        // Lighter shade for children
-                        color = parentColor + 'aa'; // add transparency
-                    }
-                }
+                markerRadius = 12 + normalizedValue * 20; // 12-32 range for main categories
+            } else if (depth === 2) {
+                markerRadius = 8 + normalizedValue * 14; // 8-22 range for level 2
+            } else if (depth === 3) {
+                markerRadius = 5 + normalizedValue * 10; // 5-15 range for level 3
             } else {
-                // Nodes without values
-                markerRadius = 6;
-                color = '#bdc3c7';
+                markerRadius = 4 + normalizedValue * 8; // 4-12 range for deeper levels
+            }
+            
+            // Ensure minimum visible size for nodes with values
+            if (hasValue && markerRadius < 4) {
+                markerRadius = 4;
             }
             
             nodes.set(n.id, { 
                 id: n.id, 
                 name: n.name,
-                color: color,
+                depth: depth,
+                isMainCategory: isMainCategory,
                 marker: { 
-                    radius: markerRadius,
-                    fillColor: color
+                    radius: markerRadius
                 },
-                ...(hasValue && { 
-                    dataLabels: { 
-                        format: `{point.name}<br/>${value.toFixed(1)} KTOE` 
-                    },
-                    value: value // store for tooltips
-                })
+                value: value
             });
         });
 

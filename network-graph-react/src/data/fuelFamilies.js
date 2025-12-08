@@ -1,137 +1,315 @@
-// Hierarchical fuel families following Eurostat NRG_BAL_C SIEC structure
-// Structure: { id, name, children: [] }
-// TOTAL → aggregates (FE, RA000) → main products → detailed sub-products
+/**
+ * Hierarchical SIEC (Standard International Energy Product Classification) structure
+ * Following Eurostat NRG_BAL_C energy balance methodology
+ * 
+ * Based on:
+ * - Eurostat Energy Balance Guide
+ * - International Recommendations for Energy Statistics (IRES)
+ * - UN Statistics Division SIEC classification
+ * 
+ * Structure: TOTAL → Main Aggregates → Product Groups → Individual Products
+ * 
+ * Main SIEC Categories:
+ * - C: Coal and coal products (solid fossil fuels)
+ * - P: Peat and peat products
+ * - S: Oil shale and oil sands
+ * - G: Natural gas
+ * - O: Oil and petroleum products
+ * - R: Renewables and biofuels
+ * - W: Waste
+ * - N: Nuclear
+ * - E: Electricity
+ * - H: Heat
+ */
 
 const fuelFamilies = [
+    // ============================================
+    // SOLID FOSSIL FUELS (Coal and manufactured gases)
+    // ============================================
     {
-        id: 'FE',
-        name: 'Fossil Energy',
+        id: 'C0000X0350-0370',
+        name: 'Solid Fossil Fuels',
         children: [
+            // Primary coal products
             {
-                id: 'C0000X0350-0370',
-                name: 'Solid Fossil Fuels',
+                id: 'C0100',
+                name: 'Hard Coal',
                 children: [
                     { id: 'C0110', name: 'Anthracite', children: [] },
                     { id: 'C0121', name: 'Coking Coal', children: [] },
-                    { id: 'C0129', name: 'Other Bituminous Coal', children: [] },
+                    { id: 'C0129', name: 'Other Bituminous Coal', children: [] }
+                ]
+            },
+            {
+                id: 'C0200',
+                name: 'Brown Coal',
+                children: [
                     { id: 'C0210', name: 'Sub-bituminous Coal', children: [] },
-                    { id: 'C0220', name: 'Lignite', children: [] },
+                    { id: 'C0220', name: 'Lignite', children: [] }
+                ]
+            },
+            // Coal-derived products
+            {
+                id: 'C0300',
+                name: 'Derived Coal Products',
+                children: [
                     { id: 'C0311', name: 'Coke Oven Coke', children: [] },
                     { id: 'C0312', name: 'Gas Coke', children: [] },
                     { id: 'C0320', name: 'Patent Fuel', children: [] },
                     { id: 'C0330', name: 'Brown Coal Briquettes', children: [] },
-                    { id: 'C0340', name: 'Coal Tar', children: [] },
+                    { id: 'C0340', name: 'Coal Tar', children: [] }
+                ]
+            }
+        ]
+    },
+    // Manufactured gases (from coal)
+    {
+        id: 'C0350-0370',
+        name: 'Manufactured Gases',
+        children: [
+            { id: 'C0350', name: 'Coke Oven Gas', children: [] },
+            { id: 'C0360', name: 'Gas Works Gas', children: [] },
+            { id: 'C0371', name: 'Blast Furnace Gas', children: [] },
+            { id: 'C0379', name: 'Other Recovered Gases', children: [] }
+        ]
+    },
+
+    // ============================================
+    // PEAT AND PEAT PRODUCTS
+    // ============================================
+    {
+        id: 'P1000',
+        name: 'Peat and Peat Products',
+        children: [
+            { id: 'P1100', name: 'Peat', children: [] },
+            { id: 'P1200', name: 'Peat Products', children: [] }
+        ]
+    },
+
+    // ============================================
+    // OIL SHALE AND OIL SANDS
+    // ============================================
+    {
+        id: 'S2000',
+        name: 'Oil Shale and Oil Sands',
+        children: []
+    },
+
+    // ============================================
+    // NATURAL GAS
+    // ============================================
+    {
+        id: 'G3000',
+        name: 'Natural Gas',
+        children: []
+    },
+
+    // ============================================
+    // OIL AND PETROLEUM PRODUCTS
+    // ============================================
+    {
+        id: 'O4000XBIO',
+        name: 'Oil and Petroleum Products',
+        children: [
+            // Primary oil products
+            {
+                id: 'O4100_TOT',
+                name: 'Crude Oil',
+                children: []
+            },
+            { id: 'O4200', name: 'Natural Gas Liquids (NGL)', children: [] },
+            { id: 'O4300', name: 'Refinery Feedstocks', children: [] },
+            { id: 'O4400X4410', name: 'Additives and Oxygenates', children: [] },
+            { id: 'O4500', name: 'Other Hydrocarbons', children: [] },
+            // Refinery products
+            {
+                id: 'O4600',
+                name: 'Refinery Products',
+                children: [
+                    { id: 'O4610', name: 'Refinery Gas', children: [] },
+                    { id: 'O4620', name: 'Ethane', children: [] },
+                    { id: 'O4630', name: 'Liquefied Petroleum Gases (LPG)', children: [] },
+                    { id: 'O4640', name: 'Naphtha', children: [] },
+                    // Motor fuels
                     {
-                        id: 'C0350-0370',
-                        name: 'Manufactured Gases',
+                        id: 'O4650',
+                        name: 'Gasoline Products',
                         children: [
-                            { id: 'C0350', name: 'Coke Oven Gas', children: [] },
-                            { id: 'C0360', name: 'Gas Works Gas', children: [] },
-                            { id: 'C0371', name: 'Blast Furnace Gas', children: [] },
-                            { id: 'C0379', name: 'Other Recovered Gases', children: [] }
+                            { id: 'O4651', name: 'Aviation Gasoline', children: [] },
+                            { id: 'O4652XR5210B', name: 'Motor Gasoline', children: [] },
+                            { id: 'O4653', name: 'Gasoline-type Jet Fuel', children: [] }
+                        ]
+                    },
+                    // Kerosene and diesel
+                    {
+                        id: 'O4660',
+                        name: 'Kerosene and Middle Distillates',
+                        children: [
+                            { id: 'O4661XR5230B', name: 'Kerosene-type Jet Fuel', children: [] },
+                            { id: 'O4669', name: 'Other Kerosene', children: [] },
+                            { id: 'O4671XR5220B', name: 'Gas Oil and Diesel Oil', children: [] }
+                        ]
+                    },
+                    { id: 'O4680', name: 'Fuel Oil', children: [] },
+                    // Other petroleum products
+                    {
+                        id: 'O4690',
+                        name: 'Other Petroleum Products',
+                        children: [
+                            { id: 'O4691', name: 'White Spirit and SBP', children: [] },
+                            { id: 'O4692', name: 'Lubricants', children: [] },
+                            { id: 'O4693', name: 'Paraffin Waxes', children: [] },
+                            { id: 'O4694', name: 'Petroleum Coke', children: [] },
+                            { id: 'O4695', name: 'Bitumen', children: [] },
+                            { id: 'O4699', name: 'Other Oil Products n.e.c.', children: [] }
                         ]
                     }
                 ]
-            },
-            {
-                id: 'P1000',
-                name: 'Peat & Peat Products',
-                children: [
-                    { id: 'P1100', name: 'Peat', children: [] },
-                    { id: 'P1200', name: 'Peat Products', children: [] }
-                ]
-            },
-            {
-                id: 'S2000',
-                name: 'Oil Shale & Oil Sands',
-                children: []
-            },
-            {
-                id: 'G3000',
-                name: 'Natural Gas',
-                children: []
-            },
-            {
-                id: 'O4000XBIO',
-                name: 'Oil & Petroleum Products',
-                children: [
-                    { id: 'O4100_TOT', name: 'Crude Oil', children: [] },
-                    { id: 'O4200', name: 'Natural Gas Liquids', children: [] },
-                    { id: 'O4300', name: 'Refinery Feedstocks', children: [] },
-                    { id: 'O4400X4410', name: 'Additives & Oxygenates', children: [] },
-                    { id: 'O4500', name: 'Other Hydrocarbons', children: [] },
-                    { id: 'O4610', name: 'Refinery Gas', children: [] },
-                    { id: 'O4620', name: 'Ethane', children: [] },
-                    { id: 'O4630', name: 'Liquefied Petroleum Gases', children: [] },
-                    { id: 'O4640', name: 'Naphtha', children: [] },
-                    { id: 'O4651', name: 'Aviation Gasoline', children: [] },
-                    { id: 'O4652XR5210B', name: 'Motor Gasoline', children: [] },
-                    { id: 'O4653', name: 'Gasoline-type Jet Fuel', children: [] },
-                    { id: 'O4661XR5230B', name: 'Kerosene-type Jet Fuel', children: [] },
-                    { id: 'O4669', name: 'Other Kerosene', children: [] },
-                    { id: 'O4671XR5220B', name: 'Gas Oil & Diesel Oil', children: [] },
-                    { id: 'O4680', name: 'Fuel Oil', children: [] },
-                    { id: 'O4691', name: 'White Spirit & SBP Spirits', children: [] },
-                    { id: 'O4692', name: 'Lubricants', children: [] },
-                    { id: 'O4693', name: 'Paraffin Waxes', children: [] },
-                    { id: 'O4694', name: 'Petroleum Coke', children: [] },
-                    { id: 'O4695', name: 'Bitumen', children: [] },
-                    { id: 'O4699', name: 'Other Oil Products', children: [] }
-                ]
             }
         ]
     },
+
+    // ============================================
+    // RENEWABLES AND BIOFUELS
+    // ============================================
     {
         id: 'RA000',
-        name: 'Renewables & Biofuels',
+        name: 'Renewables and Biofuels',
         children: [
-            { id: 'RA100', name: 'Hydro', children: [] },
-            { id: 'RA200', name: 'Geothermal', children: [] },
-            { id: 'RA300', name: 'Wind', children: [] },
-            { id: 'RA410', name: 'Solar Thermal', children: [] },
-            { id: 'RA420', name: 'Solar Photovoltaic', children: [] },
-            { id: 'RA500', name: 'Tide, Wave, Ocean', children: [] },
-            { id: 'RA600', name: 'Ambient Heat (Heat Pumps)', children: [] },
+            // Primary renewables (non-combustible)
             {
-                id: 'BIOE',
-                name: 'Bioenergy',
+                id: 'RA100',
+                name: 'Hydro Power',
+                children: []
+            },
+            {
+                id: 'RA200',
+                name: 'Geothermal Energy',
+                children: []
+            },
+            {
+                id: 'RA300',
+                name: 'Wind Energy',
+                children: []
+            },
+            {
+                id: 'RA400',
+                name: 'Solar Energy',
                 children: [
-                    { id: 'R5110-5150_W6000RI', name: 'Primary Solid Biofuels', children: [] },
-                    { id: 'R5160', name: 'Charcoal', children: [] },
-                    { id: 'R5210P', name: 'Pure Biogasoline', children: [] },
-                    { id: 'R5210B', name: 'Blended Biogasoline', children: [] },
-                    { id: 'R5220P', name: 'Pure Biodiesels', children: [] },
-                    { id: 'R5220B', name: 'Blended Biodiesels', children: [] },
-                    { id: 'R5230P', name: 'Pure Bio Jet Kerosene', children: [] },
-                    { id: 'R5230B', name: 'Blended Bio Jet Kerosene', children: [] },
-                    { id: 'R5290', name: 'Other Liquid Biofuels', children: [] },
-                    { id: 'R5300', name: 'Biogases', children: [] }
+                    { id: 'RA410', name: 'Solar Thermal', children: [] },
+                    { id: 'RA420', name: 'Solar Photovoltaic', children: [] }
+                ]
+            },
+            {
+                id: 'RA500',
+                name: 'Tide, Wave and Ocean',
+                children: []
+            },
+            {
+                id: 'RA600',
+                name: 'Ambient Heat (Heat Pumps)',
+                children: []
+            },
+            // Biofuels (combustible renewables)
+            {
+                id: 'R5000',
+                name: 'Biofuels',
+                children: [
+                    // Solid biofuels
+                    {
+                        id: 'R5100',
+                        name: 'Solid Biofuels',
+                        children: [
+                            { id: 'R5110-5150_W6000RI', name: 'Primary Solid Biofuels', children: [] },
+                            { id: 'R5160', name: 'Charcoal', children: [] }
+                        ]
+                    },
+                    // Liquid biofuels
+                    {
+                        id: 'R5200',
+                        name: 'Liquid Biofuels',
+                        children: [
+                            {
+                                id: 'R5210',
+                                name: 'Biogasoline',
+                                children: [
+                                    { id: 'R5210P', name: 'Pure Biogasoline', children: [] },
+                                    { id: 'R5210B', name: 'Blended Biogasoline', children: [] }
+                                ]
+                            },
+                            {
+                                id: 'R5220',
+                                name: 'Biodiesels',
+                                children: [
+                                    { id: 'R5220P', name: 'Pure Biodiesels', children: [] },
+                                    { id: 'R5220B', name: 'Blended Biodiesels', children: [] }
+                                ]
+                            },
+                            {
+                                id: 'R5230',
+                                name: 'Bio Jet Kerosene',
+                                children: [
+                                    { id: 'R5230P', name: 'Pure Bio Jet Kerosene', children: [] },
+                                    { id: 'R5230B', name: 'Blended Bio Jet Kerosene', children: [] }
+                                ]
+                            },
+                            { id: 'R5290', name: 'Other Liquid Biofuels', children: [] }
+                        ]
+                    },
+                    // Gaseous biofuels
+                    {
+                        id: 'R5300',
+                        name: 'Biogases',
+                        children: []
+                    }
                 ]
             }
         ]
     },
+
+    // ============================================
+    // WASTE (Non-renewable portion)
+    // ============================================
     {
         id: 'W6100_6220',
         name: 'Non-Renewable Waste',
         children: [
-            { id: 'W6100', name: 'Industrial Waste', children: [] },
-            { id: 'W6210', name: 'Renewable Municipal Waste', children: [] },
-            { id: 'W6220', name: 'Non-renewable Municipal Waste', children: [] }
+            { id: 'W6100', name: 'Industrial Waste (Non-renewable)', children: [] },
+            {
+                id: 'W6200',
+                name: 'Municipal Waste',
+                children: [
+                    { id: 'W6210', name: 'Renewable Municipal Waste', children: [] },
+                    { id: 'W6220', name: 'Non-renewable Municipal Waste', children: [] }
+                ]
+            }
         ]
     },
+
+    // ============================================
+    // NUCLEAR
+    // ============================================
     {
         id: 'N900H',
         name: 'Nuclear Heat',
         children: []
     },
+
+    // ============================================
+    // ELECTRICITY (Secondary energy)
+    // ============================================
     {
         id: 'E7000',
         name: 'Electricity',
         children: []
     },
+
+    // ============================================
+    // HEAT (Secondary energy)
+    // ============================================
     {
         id: 'H8000',
-        name: 'Heat',
+        name: 'Derived Heat',
         children: []
     }
 ];
