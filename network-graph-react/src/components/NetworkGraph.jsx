@@ -22,9 +22,10 @@ initModule(accessibility);
 // EU Official Colors for chart
 const EU_COLORS = {
     blue: '#004494',       // EU Blue - Primary (TOTAL)
-    yellow: '#FFC617',     // EU Yellow (Main categories)
-    darkBlue: '#003776',   // Dark Blue (Sub-products)
-    grey: '#404040'
+    yellow: '#FFC617',     // EU Yellow
+    darkBlue: '#0e47cb',   // Dark Blue (Sub-products)
+    grey: '#404040',
+    white: '#FFFFFF'       // White (Main categories fill)
 };
 
 // Memoized chart component that never re-renders when modal state changes
@@ -150,14 +151,23 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                     const isTotal = node.id === 'TOTAL';
                     
                     // Determine color based on level:
-                    // 1. TOTAL = EU Blue
+                    // 1. TOTAL = White with Blue border
                     // 2. Main categories = EU Yellow
                     // 3. Sub-products = EU Dark Blue
                     let nodeColor = EU_COLORS.darkBlue; // Default: sub-products
+                    let borderColor = 'rgba(0, 55, 118, 0.3)';
+                    let borderWidth = 2;
+                    
                     if (isTotal) {
-                        nodeColor = EU_COLORS.blue;
+                        // TOTAL: White fill with blue border
+                        nodeColor = EU_COLORS.white;
+                        borderColor = EU_COLORS.blue;
+                        borderWidth = 4;
                     } else if (isMainCategory) {
+                        // Main categories: Yellow
                         nodeColor = EU_COLORS.yellow;
+                        borderColor = EU_COLORS.grey;
+                        borderWidth = 2;
                     }
                     
                     const baseNode = {
@@ -165,8 +175,8 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                         color: nodeColor,
                         marker: {
                             ...(node.marker || {}),
-                            lineWidth: 2,
-                            lineColor: isMainCategory ? EU_COLORS.grey : 'rgba(0, 55, 118, 0.3)',
+                            lineWidth: borderWidth,
+                            lineColor: borderColor,
                             fillColor: nodeColor
                         },
                         events: {
