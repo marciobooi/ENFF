@@ -7,6 +7,17 @@ import exporting from 'highcharts/modules/exporting';
 import accessibility from 'highcharts/modules/accessibility';
 import useEurostatGraphData from '../hooks/useEurostatGraphData';
 import NodeDetailModal from './NodeDetailModal';
+import FloatingToolbar from './FloatingToolbar';
+import balanceCodes from '../data/balanceCodes';
+
+// Default chart configuration
+const DEFAULT_CONFIG = {
+    geo: 'EU27_2020',
+    time: '2023',
+    unit: 'KTOE',
+    nrg_bal: 'NRGSUP',
+    decimals: 0
+};
 
 // Initialize modules safely
 const initModule = (mod) => {
@@ -31,8 +42,10 @@ const EU_COLORS = {
 };
 
 // Memoized chart component that never re-renders when modal state changes
-const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
+const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }) => {
     const chartRef = useRef(null);
+    const decimals = chartConfig?.decimals ?? 0;
+    const unit = chartConfig?.unit ?? 'KTOE';
 
     const options = useMemo(() => ({
         chart: {
@@ -53,7 +66,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
            
         },
         title: {
-            text: 'Eurostat Energy Supply Network',
+            text: `Eurostat Energy Balance: ${balanceCodes.find(b => b.code === chartConfig?.nrg_bal)?.label || 'Total energy supply'}`,
             align: 'left',
             style: {
                 fontFamily: 'Arial, sans-serif',
@@ -63,7 +76,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
             }
         },
         subtitle: {
-            text: 'EU27_2020 • 2023 • KTOE (NRGSUP)',
+            text: `${chartConfig?.geo || 'EU27_2020'} • ${chartConfig?.time || '2023'} • ${unit}`,
             align: 'left',
             style: {
                 fontFamily: 'Arial, sans-serif',
@@ -208,7 +221,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                         // Add data labels for all nodes except TOTAL
                         dataLabels: !isTotal ? {
                             enabled: true,
-                            format: `{point.name}${node.value ? `<br/>${node.value.toFixed(0)} KTOE` : ''}`,
+                            format: `{point.name}${node.value ? `<br/>${node.value.toFixed(decimals)} ${unit}` : ''}`,
                             verticalAlign: 'bottom',
                             y: -5,
                             style: {
@@ -219,7 +232,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
                             }
                         } : {
                             enabled: true,
-                            format: 'Total Energy Supply',
+                            format: balanceCodes.find(b => b.code === chartConfig?.nrg_bal)?.label || 'Total energy supply',
                             style: {
                                 fontSize: '14px',
                                 fontWeight: '700',
@@ -258,7 +271,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
         ],
         exporting: { enabled: false },
         credits: { enabled: false }
-    }), [seriesData, gravConstant, onNodeClick]);
+    }), [seriesData, gravConstant, onNodeClick, chartConfig, decimals, unit]);
 
     return (
         <HighchartsReact
@@ -273,9 +286,23 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick }) => {
 });
 
 const NetworkGraph = () => {
-    const { graph, loading, error } = useEurostatGraphData();
+    // Chart configuration state
+    const [chartConfig, setChartConfig] = useState(DEFAULT_CONFIG);
+    const [appliedConfig, setAppliedConfig] = useState(DEFAULT_CONFIG);
+    
+    const { graph, loading, error, currentQuery } = useEurostatGraphData(appliedConfig);
     const [selectedNode, setSelectedNode] = useState(null);
     const gravConstant = typeof window !== 'undefined' && window.innerWidth < 500 ? 0.2 : 0.06;
+
+    // Handle config change from toolbar (doesn't trigger refetch)
+    const handleConfigChange = useCallback((newConfig) => {
+        setChartConfig(newConfig);
+    }, []);
+
+    // Handle apply button click (triggers refetch)
+    const handleApply = useCallback(() => {
+        setAppliedConfig(chartConfig);
+    }, [chartConfig]);
 
     const seriesData = useMemo(() => {
         if (graph?.edges?.length && graph?.nodes?.length) {
@@ -350,15 +377,23 @@ const NetworkGraph = () => {
 
     return (
         <>
+            <FloatingToolbar
+                config={chartConfig}
+                onConfigChange={handleConfigChange}
+                onApply={handleApply}
+            />
             <Chart 
                 seriesData={seriesData}
                 gravConstant={gravConstant}
                 onNodeClick={handleNodeClick}
+                chartConfig={appliedConfig}
             />
             <NodeDetailModal
                 open={!!selectedNode}
                 node={selectedNode}
                 onClose={() => setSelectedNode(null)}
+                unit={appliedConfig.unit}
+                decimals={appliedConfig.decimals}
             />
         </>
     );

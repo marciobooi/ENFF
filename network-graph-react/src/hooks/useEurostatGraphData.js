@@ -2,22 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import fuelFamilies from '../data/fuelFamilies';
 import siecCodes from '../data/siecCodes';
+import balanceCodes from '../data/balanceCodes';
 
-// Hard-coded query parameters per request
-const QUERY = {
+// Default query parameters
+const DEFAULT_QUERY = {
     geo: 'EU27_2020',
     time: '2023',
     unit: 'KTOE',
     nrg_bal: 'NRGSUP', // Total energy supply (pick one balance to anchor values)
-    freq: 'A'
+    freq: 'A',
+    decimals: 0
 };
 
 const API_URL = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nrg_bal_c';
 
-const buildFamilyEdges = () => {
+const buildFamilyEdges = (balanceLabel = 'Total Energy') => {
     const edges = [];
     const nodes = new Map();
-    nodes.set('TOTAL', { id: 'TOTAL', name: 'Total Energy' });
+    nodes.set('TOTAL', { id: 'TOTAL', name: balanceLabel });
 
     const walk = (node, parentId) => {
         const { id, name, children = [] } = node;
@@ -67,10 +69,20 @@ const buildValueBySiec = (dataset) => {
     return valBySiec;
 };
 
-const useEurostatGraphData = () => {
+const useEurostatGraphData = (queryParams = {}) => {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Serialize queryParams for stable dependency comparison
+    const queryParamsKey = JSON.stringify(queryParams);
+
+    // Merge provided params with defaults
+    const QUERY = useMemo(() => ({
+        ...DEFAULT_QUERY,
+        ...queryParams
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [queryParamsKey]);
 
     useEffect(() => {
         let mounted = true;
@@ -101,12 +113,15 @@ const useEurostatGraphData = () => {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [QUERY.time, QUERY.geo, QUERY.unit, QUERY.nrg_bal, QUERY.freq]);
 
     const graph = useMemo(() => {
         if (!data) return null;
 
-        const { familyEdges, familyNodes } = buildFamilyEdges();
+        // Get the balance label for the TOTAL node
+        const balanceLabel = balanceCodes.find(b => b.code === QUERY.nrg_bal)?.label || 'Total Energy';
+        
+        const { familyEdges, familyNodes } = buildFamilyEdges(balanceLabel);
         const valBySiec = buildValueBySiec(data);
 
         console.log('Total nodes in hierarchy:', familyNodes.length);
@@ -249,11 +264,12 @@ const useEurostatGraphData = () => {
         return {
             edges,
             nodes: Array.from(nodes.values()),
-            meta: QUERY
+            meta: QUERY,
+            decimals: QUERY.decimals
         };
-    }, [data]);
+    }, [data, QUERY]);
 
-    return { graph, error, loading };
+    return { graph, error, loading, currentQuery: QUERY };
 };
 
 export default useEurostatGraphData;

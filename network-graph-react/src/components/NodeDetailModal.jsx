@@ -23,7 +23,7 @@ const InfoIcon = () => (
     </svg>
 );
 
-const NodeDetailModal = ({ open, node, onClose }) => {
+const NodeDetailModal = ({ open, node, onClose, unit = 'KTOE', decimals = 0 }) => {
     // Handle ESC key to close modal
     useEffect(() => {
         const handleEsc = (e) => {
@@ -86,8 +86,8 @@ const NodeDetailModal = ({ open, node, onClose }) => {
                                     <>
                                         <dt className="ecl-description-list__term">Energy Supply</dt>
                                         <dd className="ecl-description-list__definition">
-                                            <strong>{node.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
-                                            <span className="ecl-u-type-color-grey"> KTOE</span>
+                                            <strong>{node.value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</strong>
+                                            <span className="ecl-u-type-color-grey"> {unit}</span>
                                         </dd>
                                     </>
                                 )}
@@ -116,8 +116,8 @@ const NodeDetailModal = ({ open, node, onClose }) => {
                                     <InfoIcon />
                                     <div className="ecl-message__content">
                                         <p className="ecl-message__description">
-                                            Data from Eurostat NRG_BAL_C energy balance dataset for EU27 (2023).
-                                            Values represent total energy supply in thousand tonnes of oil equivalent.
+                                            Data from Eurostat NRG_BAL_C energy balance dataset.
+                                            Values are displayed in {unit}.
                                         </p>
                                     </div>
                                 </div>
