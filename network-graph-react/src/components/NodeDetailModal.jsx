@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import definitions from '../data/definitions';
 
@@ -24,17 +24,51 @@ const InfoIcon = () => (
 );
 
 const NodeDetailModal = ({ open, node, onClose, unit = 'KTOE', decimals = 0 }) => {
-    // Handle ESC key to close modal
+    const modalRef = useRef(null);
+    const closeButtonRef = useRef(null);
+
+    // Handle ESC key to close modal and focus trap
     useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose?.();
+        if (!open) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose?.();
+                return;
+            }
+
+            // Focus trap
+            if (e.key === 'Tab') {
+                const focusableElements = modalRef.current?.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (!focusableElements?.length) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            }
         };
-        if (open) {
-            document.addEventListener('keydown', handleEsc);
-            document.body.style.overflow = 'hidden';
-        }
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = 'hidden';
+
+        // Focus the close button when modal opens
+        setTimeout(() => closeButtonRef.current?.focus(), 0);
+
         return () => {
-            document.removeEventListener('keydown', handleEsc);
+            document.removeEventListener('keydown', handleKeyDown);
             document.body.style.overflow = '';
         };
     }, [open, onClose]);
@@ -43,11 +77,12 @@ const NodeDetailModal = ({ open, node, onClose, unit = 'KTOE', decimals = 0 }) =
 
     const modalContent = (
         <dialog 
+            ref={modalRef}
             className="ecl-modal ecl-modal--l"
             aria-modal="true"
             aria-labelledby="modal-node-header"
             open
-
+            style={{ zIndex: 10000 }}
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose?.();
             }}
@@ -60,6 +95,7 @@ const NodeDetailModal = ({ open, node, onClose, unit = 'KTOE', decimals = 0 }) =
                             {node.name || node.id}
                         </div>
                         <button 
+                            ref={closeButtonRef}
                             className="ecl-button ecl-button--tertiary ecl-modal__close ecl-button--icon-only" 
                             type="button"
                             onClick={onClose}
