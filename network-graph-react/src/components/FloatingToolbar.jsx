@@ -106,7 +106,7 @@ const CollapseIcon = ({ expanded }) => (
 );
 
 const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
-    const [position, setPosition] = useState({ x: 20, y: 20 });
+    const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 20 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [isExpanded, setIsExpanded] = useState(false);
@@ -114,6 +114,8 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const toolbarRef = useRef(null);
     const dragHandleRef = useRef(null);
+    const firstFocusableRef = useRef(null);
+    const lastFocusableRef = useRef(null);
 
     // Handle drag start
     const handleDragStart = useCallback((e) => {
@@ -240,6 +242,40 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [activeDropdown]);
+
+    // Focus trap when expanded
+    useEffect(() => {
+        if (!isExpanded) return;
+
+        const handleFocusTrap = (e) => {
+            if (e.key !== 'Tab') return;
+            
+            const focusableElements = toolbarRef.current?.querySelectorAll(
+                'button, select, [tabindex]:not([tabindex="-1"])'
+            );
+            if (!focusableElements?.length) return;
+
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            if (e.shiftKey) {
+                // Shift + Tab: if on first element, go to last
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                // Tab: if on last element, go to first
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleFocusTrap);
+        return () => document.removeEventListener('keydown', handleFocusTrap);
+    }, [isExpanded]);
 
     // Handle config change
     const handleChange = (key, value) => {
