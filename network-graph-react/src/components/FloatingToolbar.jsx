@@ -253,6 +253,13 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     useEffect(() => {
         if (!isExpanded) return;
 
+        // Reinitialize ECL components when toolbar expands
+        if (typeof window !== 'undefined' && window.ECL) {
+            setTimeout(() => {
+                window.ECL.autoInit();
+            }, 100);
+        }
+
         const handleFocusTrap = (e) => {
             if (e.key !== 'Tab') return;
             
