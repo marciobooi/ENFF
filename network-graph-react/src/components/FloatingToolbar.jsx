@@ -109,7 +109,7 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     const [position, setPosition] = useState({ x: 20, y: 20 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const toolbarRef = useRef(null);
@@ -186,12 +186,24 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
                 setFocusedIndex(focusableElements.length - 1);
                 break;
             case 'Escape':
-                setActiveDropdown(null);
+                e.preventDefault();
+                if (activeDropdown) {
+                    setActiveDropdown(null);
+                } else if (isExpanded) {
+                    setIsExpanded(false);
+                }
+                break;
+            case 'Enter':
+                // Toggle expand/collapse when focus is on the toolbar header (not on form elements)
+                if (e.target.closest('.toolbar-drag-handle') && !e.target.closest('button')) {
+                    e.preventDefault();
+                    setIsExpanded(!isExpanded);
+                }
                 break;
             default:
                 break;
         }
-    }, []);
+    }, [activeDropdown, isExpanded]);
 
     // Handle keyboard drag
     const handleDragKeyDown = useCallback((e) => {
@@ -567,13 +579,26 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
 
             {/* Collapsed State */}
             {!isExpanded && (
-                <div style={{ 
-                    padding: '8px 12px',
-                    fontSize: '12px',
-                    color: '#666',
-                    textAlign: 'center'
-                }}>
-                    {COUNTRIES.find(c => c.code === config.geo)?.label} • {config.time}
+                <div 
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setIsExpanded(true)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setIsExpanded(true);
+                        }
+                    }}
+                    aria-label="Click or press Enter to expand toolbar settings"
+                    style={{ 
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        color: '#666',
+                        textAlign: 'center',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {COUNTRIES.find(c => c.code === config.geo)?.label} • {config.time} • Click to expand
                 </div>
             )}
         </div>
