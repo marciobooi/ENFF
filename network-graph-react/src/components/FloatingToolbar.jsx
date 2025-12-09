@@ -105,6 +105,97 @@ const CollapseIcon = ({ expanded }) => (
     </svg>
 );
 
+// Reusable ECL Select Component matching ECL library structure
+const EclSelect = ({ id, label, icon: Icon, value, onChange, options, helpText }) => (
+    <div className="ecl-form-group" style={{ flex: 1 }}>
+        <label 
+            htmlFor={id} 
+            id={`${id}-label`}
+            className="ecl-form-label"
+            style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#404040',
+                marginBottom: '4px'
+            }}
+        >
+            {Icon && <Icon />}
+            {label}
+        </label>
+        {helpText && (
+            <div className="ecl-help-block" id={`${id}-helper`} style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+                {helpText}
+            </div>
+        )}
+        <div className="ecl-select__container ecl-select__container--m" style={{ position: 'relative', display: 'flex' }}>
+            <select
+                className="ecl-select"
+                id={id}
+                name={id}
+                value={value}
+                onChange={onChange}
+                aria-describedby={helpText ? `${id}-helper` : undefined}
+                data-ecl-auto-init="Select"
+                style={{
+                    width: '100%',
+                    padding: '8px 40px 8px 12px',
+                    border: '1px solid #404040',
+                    borderRadius: '4px 0 0 4px',
+                    fontSize: '14px',
+                    backgroundColor: '#ffffff',
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none'
+                }}
+            >
+                {options.map(opt => (
+                    <option key={opt.code} value={opt.code} aria-label={opt.label}>
+                        {opt.label}
+                    </option>
+                ))}
+            </select>
+            <div className="ecl-select__icon">
+                <button 
+                    className="ecl-button ecl-button--ghost ecl-button--icon-only" 
+                    type="button" 
+                    tabIndex={-1}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px',
+                        border: '1px solid #404040',
+                        borderLeft: 'none',
+                        borderRadius: '0 4px 4px 0',
+                        backgroundColor: '#f5f5f5',
+                        cursor: 'pointer',
+                        height: '100%'
+                    }}
+                >
+                    <span className="ecl-button__container">
+                        <span className="ecl-button__label" data-ecl-label="true" style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>
+                            Toggle dropdown
+                        </span>
+                        <svg 
+                            className="ecl-icon ecl-icon--xs ecl-icon--rotate-180 ecl-button__icon" 
+                            focusable="false" 
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            style={{ width: '16px', height: '16px', fill: '#404040' }}
+                        >
+                            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
 const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 20 });
     const [isDragging, setIsDragging] = useState(false);
@@ -369,207 +460,54 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
                 <div style={{ padding: '16px' }}>
                     {/* Row 1: Country and Balance */}
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                        {/* Country Select */}
-                        <div className="ecl-form-group" style={{ flex: 1 }}>
-                            <label 
-                                className="ecl-form-label" 
-                                htmlFor="geo-select"
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    color: '#404040',
-                                    marginBottom: '4px'
-                                }}
-                            >
-                                <GlobeIcon />
-                                Country
-                            </label>
-                            <select
-                                id="geo-select"
-                                className="ecl-select"
-                                value={config.geo}
-                                onChange={(e) => handleChange('geo', e.target.value)}
-                                aria-describedby="geo-help"
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    border: '1px solid #404040',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    backgroundColor: '#ffffff',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {COUNTRIES.map(c => (
-                                    <option key={c.code} value={c.code}>{c.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Balance Select */}
-                        <div className="ecl-form-group" style={{ flex: 1 }}>
-                            <label 
-                                className="ecl-form-label" 
-                                htmlFor="balance-select"
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    color: '#404040',
-                                    marginBottom: '4px'
-                                }}
-                            >
-                                <ChartIcon />
-                                Balance
-                            </label>
-                            <select
-                                id="balance-select"
-                                className="ecl-select"
-                                value={config.nrg_bal}
-                                onChange={(e) => handleChange('nrg_bal', e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    border: '1px solid #404040',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    backgroundColor: '#ffffff',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {balanceCodes.map(b => (
-                                    <option key={b.code} value={b.code}>{b.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <EclSelect
+                            id="geo-select"
+                            label="Country"
+                            icon={GlobeIcon}
+                            value={config.geo}
+                            onChange={(e) => handleChange('geo', e.target.value)}
+                            options={COUNTRIES}
+                        />
+                        <EclSelect
+                            id="balance-select"
+                            label="Balance"
+                            icon={ChartIcon}
+                            value={config.nrg_bal}
+                            onChange={(e) => handleChange('nrg_bal', e.target.value)}
+                            options={balanceCodes}
+                        />
                     </div>
 
                     {/* Row 2: Year and Unit */}
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                        {/* Year Select */}
-                        <div className="ecl-form-group" style={{ flex: 1 }}>
-                            <label 
-                                className="ecl-form-label" 
-                                htmlFor="year-select"
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    color: '#404040',
-                                    marginBottom: '4px'
-                                }}
-                            >
-                                <CalendarIcon />
-                                Year
-                            </label>
-                            <select
-                                id="year-select"
-                                className="ecl-select"
-                                value={config.time}
-                                onChange={(e) => handleChange('time', e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    border: '1px solid #404040',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    backgroundColor: '#ffffff',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {YEARS.map(y => (
-                                    <option key={y.code} value={y.code}>{y.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Unit Select */}
-                        <div className="ecl-form-group" style={{ flex: 1 }}>
-                            <label 
-                                className="ecl-form-label" 
-                                htmlFor="unit-select"
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    color: '#404040',
-                                    marginBottom: '4px'
-                                }}
-                            >
-                                <UnitIcon />
-                                Unit
-                            </label>
-                            <select
-                                id="unit-select"
-                                className="ecl-select"
-                                value={config.unit}
-                                onChange={(e) => handleChange('unit', e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    border: '1px solid #404040',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    backgroundColor: '#ffffff',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {UNITS.map(u => (
-                                    <option key={u.code} value={u.code}>{u.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <EclSelect
+                            id="year-select"
+                            label="Year"
+                            icon={CalendarIcon}
+                            value={config.time}
+                            onChange={(e) => handleChange('time', e.target.value)}
+                            options={YEARS}
+                        />
+                        <EclSelect
+                            id="unit-select"
+                            label="Unit"
+                            icon={UnitIcon}
+                            value={config.unit}
+                            onChange={(e) => handleChange('unit', e.target.value)}
+                            options={UNITS}
+                        />
                     </div>
 
                     {/* Row 3: Decimals and Apply */}
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                        {/* Decimals Select */}
-                        <div className="ecl-form-group" style={{ flex: 1 }}>
-                            <label 
-                                className="ecl-form-label" 
-                                htmlFor="decimals-select"
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '600',
-                                    color: '#404040',
-                                    marginBottom: '4px'
-                                }}
-                            >
-                                <DecimalIcon />
-                                Decimals
-                            </label>
-                            <select
-                                id="decimals-select"
-                                className="ecl-select"
-                                value={config.decimals}
-                                onChange={(e) => handleChange('decimals', Number(e.target.value))}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    border: '1px solid #404040',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    backgroundColor: '#ffffff',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {DECIMALS.map(d => (
-                                    <option key={d.code} value={d.code}>{d.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <EclSelect
+                            id="decimals-select"
+                            label="Decimals"
+                            icon={DecimalIcon}
+                            value={config.decimals}
+                            onChange={(e) => handleChange('decimals', Number(e.target.value))}
+                            options={DECIMALS}
+                        />
 
                         {/* Apply Button */}
                         <button
