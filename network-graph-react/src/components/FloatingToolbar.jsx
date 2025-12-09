@@ -155,6 +155,11 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
 
     // Keyboard navigation for the toolbar
     const handleToolbarKeyDown = useCallback((e) => {
+        // Skip navigation if focus is on the drag button (arrow keys should move the toolbar)
+        if (e.target.closest('.toolbar-drag-btn')) {
+            return; // Let handleDragKeyDown handle arrow keys
+        }
+
         const focusableElements = toolbarRef.current?.querySelectorAll(
             'button, select, [tabindex]:not([tabindex="-1"])'
         );
@@ -323,6 +328,7 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button
                         type="button"
+                        className="toolbar-drag-btn"
                         aria-label="Drag to reposition toolbar. Use arrow keys when focused."
                         onKeyDown={handleDragKeyDown}
                         style={{
