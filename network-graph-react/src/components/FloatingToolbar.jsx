@@ -125,30 +125,36 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     const TOOLBAR_EXPANDED_HEIGHT = 400;
     const PADDING = 10; // Minimum distance from screen edges
 
-    // Adjust position when expanded state changes or window resizes
+    // Adjust position when expanded state changes
     useEffect(() => {
-        // Calculate bounds for the new expanded state
-        const width = isExpanded ? TOOLBAR_EXPANDED_WIDTH : TOOLBAR_COLLAPSED_WIDTH;
-        const height = isExpanded ? TOOLBAR_EXPANDED_HEIGHT : TOOLBAR_COLLAPSED_HEIGHT;
-        const maxX = window.innerWidth - width - PADDING;
-        const maxY = window.innerHeight - height - PADDING;
+        // Use a small timeout to let the DOM update with new dimensions
+        const timeoutId = setTimeout(() => {
+            const rect = toolbarRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            
+            const maxX = window.innerWidth - rect.width - PADDING;
+            const maxY = window.innerHeight - rect.height - PADDING;
+            
+            const boundedX = Math.max(PADDING, Math.min(maxX, position.x));
+            const boundedY = Math.max(PADDING, Math.min(maxY, position.y));
+            
+            if (boundedX !== position.x || boundedY !== position.y) {
+                setPosition({ x: boundedX, y: boundedY });
+            }
+        }, 10);
         
-        const boundedX = Math.max(PADDING, Math.min(maxX, position.x));
-        const boundedY = Math.max(PADDING, Math.min(maxY, position.y));
-        
-        if (boundedX !== position.x || boundedY !== position.y) {
-            setPosition({ x: boundedX, y: boundedY });
-        }
+        return () => clearTimeout(timeoutId);
     }, [isExpanded]);
 
     // Handle window resize to keep toolbar in bounds
     useEffect(() => {
         const handleWindowResize = () => {
+            const rect = toolbarRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            
             setPosition(prev => {
-                const width = isExpanded ? TOOLBAR_EXPANDED_WIDTH : TOOLBAR_COLLAPSED_WIDTH;
-                const height = isExpanded ? TOOLBAR_EXPANDED_HEIGHT : TOOLBAR_COLLAPSED_HEIGHT;
-                const maxX = window.innerWidth - width - PADDING;
-                const maxY = window.innerHeight - height - PADDING;
+                const maxX = window.innerWidth - rect.width - PADDING;
+                const maxY = window.innerHeight - rect.height - PADDING;
                 
                 return {
                     x: Math.max(PADDING, Math.min(maxX, prev.x)),
@@ -273,9 +279,10 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
     const handleDragKeyDown = useCallback((e) => {
         const step = e.shiftKey ? 50 : 10;
         
-        // Calculate bounds inline
-        const width = isExpanded ? TOOLBAR_EXPANDED_WIDTH : TOOLBAR_COLLAPSED_WIDTH;
-        const height = isExpanded ? TOOLBAR_EXPANDED_HEIGHT : TOOLBAR_COLLAPSED_HEIGHT;
+        // Use actual toolbar dimensions from the ref
+        const rect = toolbarRef.current?.getBoundingClientRect();
+        const width = rect?.width || (isExpanded ? TOOLBAR_EXPANDED_WIDTH : TOOLBAR_COLLAPSED_WIDTH);
+        const height = rect?.height || (isExpanded ? TOOLBAR_EXPANDED_HEIGHT : TOOLBAR_COLLAPSED_HEIGHT);
         const maxX = window.innerWidth - width - PADDING;
         const maxY = window.innerHeight - height - PADDING;
         
