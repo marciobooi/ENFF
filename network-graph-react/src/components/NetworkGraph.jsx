@@ -85,6 +85,44 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                 color: EU_COLORS.grey
             }
         },
+        tooltip: {
+            enabled: true,
+            useHTML: true,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            borderColor: EU_COLORS.blue,
+            borderRadius: 8,
+            shadow: true,
+            style: {
+                fontSize: '13px',
+                fontFamily: 'Arial, sans-serif'
+            },
+            formatter: function() {
+                const point = this.point;
+                if (!point) return false;
+                
+                const name = point.name || point.id;
+                const value = point.value;
+                
+                let html = `<div style="padding: 8px;">`;
+                html += `<strong style="color: ${EU_COLORS.blue}; font-size: 14px;">${name}</strong>`;
+                
+                if (value !== undefined && value !== null) {
+                    const formattedValue = value.toLocaleString(undefined, {
+                        minimumFractionDigits: decimals,
+                        maximumFractionDigits: decimals
+                    });
+                    html += `<br/><span style="color: ${EU_COLORS.grey};">Value: </span>`;
+                    html += `<strong style="color: ${EU_COLORS.darkBlue};">${formattedValue} ${unit}</strong>`;
+                }
+                
+                if (point.depth !== undefined) {
+                    html += `<br/><span style="color: ${EU_COLORS.grey}; font-size: 11px;">Level: ${point.depth}</span>`;
+                }
+                
+                html += `</div>`;
+                return html;
+            }
+        },
         plotOptions: {
             networkgraph: {
                 keys: seriesData.keys,
@@ -218,10 +256,21 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                             lineColor: borderColor,
                             fillColor: nodeColor
                         },
+                        // Store formatted value directly on the node for data labels
+                        formattedValue: node.value !== undefined && node.value !== null 
+                            ? node.value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+                            : null,
                         // Add data labels for all nodes except TOTAL
                         dataLabels: !isTotal ? {
                             enabled: true,
-                            format: `{point.name}${node.value ? `<br/>${node.value.toFixed(decimals)} ${unit}` : ''}`,
+                            formatter: function() {
+                                const name = this.point.name || this.point.id;
+                                const formattedVal = this.point.formattedValue;
+                                if (formattedVal !== null) {
+                                    return `${name}<br/>${formattedVal} ${unit}`;
+                                }
+                                return name;
+                            },
                             verticalAlign: 'bottom',
                             y: -5,
                             style: {
