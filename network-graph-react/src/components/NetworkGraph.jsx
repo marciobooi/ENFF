@@ -132,7 +132,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                 layoutAlgorithm: {
                     enableSimulation: true,
                     linkLength: 20,
-                    friction: -0.85,
+                    friction: -0.9,
                     gravitationalConstant: gravConstant * 1.5,
                     maxIterations: 500,
                     approximation: 'barnes-hut',
@@ -190,7 +190,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
         },
         series: [
             {
-                accessibility: { enabled: false },
+                accessibility: { enabled: true },
                 dataLabels: {
                     enabled: true,
                     linkFormat: '',
@@ -328,7 +328,7 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
             options={options}
             ref={chartRef}
             immutable={true}
-            updateArgs={[false, false, false]}
+           updateArgs={[true, true, { duration: 800, easing: 'easeOutQuad' }]}
             containerProps={{ style: { width: '100%', minHeight: '1000px' } }}
         />
     );
