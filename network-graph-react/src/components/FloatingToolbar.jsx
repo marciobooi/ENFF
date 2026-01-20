@@ -168,7 +168,9 @@ const FloatingToolbar = ({ config, onConfigChange, onApply }) => {
 
     // Handle drag start
     const handleDragStart = useCallback((e) => {
-        if (e.target.closest('.ecl-select') || e.target.closest('button:not(.toolbar-drag-handle)')) return;
+        // Allow dragging when clicking the drag-button (`.toolbar-drag-btn`),
+        // but ignore other buttons and ECL select elements to avoid interfering with UI controls.
+        if (e.target.closest('.ecl-select') || (e.target.closest('button') && !e.target.closest('.toolbar-drag-btn'))) return;
         
         const rect = toolbarRef.current.getBoundingClientRect();
         setDragOffset({
