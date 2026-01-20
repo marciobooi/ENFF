@@ -46,17 +46,20 @@ const getBlueShades = (count) => {
 };
 
 // Small inline SVG pie generator for embedding inside tooltips (now optimized as donut and monochrome blues)
-export function createMiniPieSvg(items = [], size = 100, inner = 38, highlightId = null, decimals = 0, unit = '') {
+export function createMiniPieSvg(items = [], size = 100, inner = 38, highlightId = null, decimals = 0, unit = '', pad = 6) {
   const total = items.reduce((s, it) => s + (Number(it.y) || 0), 0);
   const width = size;
   const height = Math.max(size * 0.75, size);
   const cx = width / 2;
   const cy = height / 2;
-  const r = Math.min(width, height) / 2;
-  const rInner = Math.max(0, inner);
+  const padVal = Math.max(2, Number(pad) || 6);
+  // reduce outer radius to leave padding space inside the svg container
+  const r = Math.min(width, height) / 2 - padVal;
+  let rInner = Math.max(0, inner - Math.round(padVal / 2));
+  if (rInner >= r) rInner = Math.max(0, Math.floor(r - 3));
 
   if (!items || !items.length || total === 0) {
-    // return a simple empty donut
+    // return a simple empty donut (respect padding using r)
     return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><circle cx="${cx}" cy="${cy}" r="${rInner || r}" fill="#f7fbff" stroke="#e6eefc"/></svg>`;
   }
 
@@ -92,11 +95,12 @@ export function createMiniPieSvg(items = [], size = 100, inner = 38, highlightId
 
     const path = `M ${x1 + dx} ${y1 + dy} A ${r} ${r} 0 ${largeArc} 1 ${x2 + dx} ${y2 + dy} L ${xi1 + dx} ${yi1 + dy} A ${rInner} ${rInner} 0 ${largeArc} 0 ${xi2 + dx} ${yi2 + dy} Z`;
     const isActive = isHighlight;
-    const fill = isActive ? EU_COLORS.yellow : colors[idx % colors.length];
-    const stroke = isActive ? EU_COLORS.blue : '#ffffff';
-    const strokeWidth = isActive ? 1.5 : 0.8;
+    const fill = colors[idx % colors.length]; // monochrome shades only
+    const stroke = isActive ? EU_COLORS.darkBlue : '#ffffff';
+    const strokeWidth = isActive ? 1.8 : 0.8;
+    const fillOpacity = isActive ? 1 : 0.96;
 
-    return `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
+    return `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" fill-opacity="${fillOpacity}"/>`;
   }).join('');
 
   // optional central label for highlighted slice (show percentage)

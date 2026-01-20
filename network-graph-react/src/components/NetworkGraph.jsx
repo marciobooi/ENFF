@@ -105,22 +105,63 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                 const value = point.value;
                 const depth = point.depth;
 
-                // Collect same-level nodes and create a tiny SVG pie
-                const nodesAtLevel = (seriesData && seriesData.nodes) ? seriesData.nodes.filter(n => n.depth === depth) : [];
+                // Collect same-level nodes. For depth > 1, restrict to nodes in the same level-1 family.
+                const allNodes = (seriesData && seriesData.nodes) ? seriesData.nodes : [];
+                const edges = (seriesData && seriesData.data) ? seriesData.data : [];
+
+                // Build parent map from edges: child -> parent
+                const parentMap = new Map();
+                edges.forEach(e => {
+                    if (Array.isArray(e) && e.length >= 2) {
+                        const [from, to] = e;
+                        parentMap.set(to, from);
+                    }
+                });
+
+                const isDescendantOf = (childId, ancestorId) => {
+                    let cur = childId;
+                    while (cur && cur !== ancestorId && cur !== 'TOTAL') {
+                        cur = parentMap.get(cur);
+                    }
+                    return cur === ancestorId;
+                };
+
+                let nodesAtLevel = [];
+                if (depth <= 1) {
+                    nodesAtLevel = allNodes.filter(n => n.depth === depth);
+                } else {
+                    // Find level-1 ancestor (the node whose parent is TOTAL)
+                    let cur = point.id;
+                    let topAncestor = null;
+                    while (cur) {
+                        const p = parentMap.get(cur);
+                        if (!p) break;
+                        if (p === 'TOTAL') { topAncestor = cur; break; }
+                        cur = p;
+                    }
+
+                    if (topAncestor) {
+                        nodesAtLevel = allNodes.filter(n => n.depth === depth && isDescendantOf(n.id, topAncestor));
+                    } else {
+                        // fallback: all nodes at that depth
+                        nodesAtLevel = allNodes.filter(n => n.depth === depth);
+                    }
+                }
+
                 const pieSize = 64; // smaller
-                const pieInner = Math.round(pieSize * 0.45);
+                const pieInner = Math.round(pieSize * 0.32); // thicker donut ring
                 const pieSvg = createMiniPieSvg(
                     nodesAtLevel.map(n => ({ id: n.id, name: n.name || n.id, y: n.value || 0 })),
                     pieSize, // size
                     pieInner, // inner radius for a donut look
                     point.id, // highlight hovered
                     decimals,
-                    unit
+                    unit,
+                    6 // internal padding to avoid clipping
                 );
 
-                let html = `<div style="display:flex;gap:8px;align-items:center;padding:6px;min-width:180px;">`;
-                html += `<div style="flex:0 0 auto; width:64px; height:48px">${pieSvg}</div>`;
-                html += `<div style="flex:1 1 auto;">`;
+                let html = `<div style="padding:8px; min-width:240px; max-width:320px; text-align:left; overflow:visible;">`;
+                html += `<div style="margin-bottom:8px">`;
                 html += `<strong style="color: ${EU_COLORS.blue}; font-size: 14px;">${name}</strong>`;
 
                 if (value !== undefined && value !== null) {
@@ -136,6 +177,9 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                     html += `<br/><span style="color: ${EU_COLORS.grey}; font-size: 11px;">Level: ${depth}</span>`;
                 }
 
+                html += `</div>`;
+                html += `<div style="display:flex;justify-content:center">`;
+                html += `<div style="width:${pieSize}px; height:${pieSize}px; display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box">${pieSvg}</div>`;
                 html += `</div>`;
                 html += `</div>`;
                 return html;
