@@ -8,6 +8,7 @@ import accessibility from 'highcharts/modules/accessibility';
 import useEurostatGraphData from '../hooks/useEurostatGraphData';
 import NodeDetailModal from './NodeDetailModal';
 import FloatingToolbar from './FloatingToolbar';
+import { createMiniPieSvg } from './PieChart';
 import balanceCodes from '../data/balanceCodes';
 
 // Default chart configuration
@@ -99,13 +100,29 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
             formatter: function() {
                 const point = this.point;
                 if (!point) return false;
-                
+
                 const name = point.name || point.id;
                 const value = point.value;
-                
-                let html = `<div style="padding: 8px;">`;
+                const depth = point.depth;
+
+                // Collect same-level nodes and create a tiny SVG pie
+                const nodesAtLevel = (seriesData && seriesData.nodes) ? seriesData.nodes.filter(n => n.depth === depth) : [];
+                const pieSize = 64; // smaller
+                const pieInner = Math.round(pieSize * 0.45);
+                const pieSvg = createMiniPieSvg(
+                    nodesAtLevel.map(n => ({ id: n.id, name: n.name || n.id, y: n.value || 0 })),
+                    pieSize, // size
+                    pieInner, // inner radius for a donut look
+                    point.id, // highlight hovered
+                    decimals,
+                    unit
+                );
+
+                let html = `<div style="display:flex;gap:8px;align-items:center;padding:6px;min-width:180px;">`;
+                html += `<div style="flex:0 0 auto; width:64px; height:48px">${pieSvg}</div>`;
+                html += `<div style="flex:1 1 auto;">`;
                 html += `<strong style="color: ${EU_COLORS.blue}; font-size: 14px;">${name}</strong>`;
-                
+
                 if (value !== undefined && value !== null) {
                     const formattedValue = value.toLocaleString(undefined, {
                         minimumFractionDigits: decimals,
@@ -114,11 +131,12 @@ const Chart = React.memo(({ seriesData, gravConstant, onNodeClick, chartConfig }
                     html += `<br/><span style="color: ${EU_COLORS.grey};">Value: </span>`;
                     html += `<strong style="color: ${EU_COLORS.darkBlue};">${formattedValue} ${unit}</strong>`;
                 }
-                
-                if (point.depth !== undefined) {
-                    html += `<br/><span style="color: ${EU_COLORS.grey}; font-size: 11px;">Level: ${point.depth}</span>`;
+
+                if (depth !== undefined) {
+                    html += `<br/><span style="color: ${EU_COLORS.grey}; font-size: 11px;">Level: ${depth}</span>`;
                 }
-                
+
+                html += `</div>`;
                 html += `</div>`;
                 return html;
             }
